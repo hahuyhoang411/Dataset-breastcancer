@@ -1,8 +1,11 @@
 data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
 head(data)
 
+
 str(data)
 summary(data)
+#table
+table(data$Class,data$age)
 
 #library
 library(dplyr)
@@ -30,12 +33,11 @@ data$Class= factor (data$Class, labels= c(0,1) , levels= c("no-recurrence-events
 
 data$age= factor (data$age,labels= c(0,1,2,3,4,5) , levels= c("20-29","30-39","40-49","50-59","60-69","70-79")) 
 
-data$meno.pause= factor (data$menopause, labels= c(0,1,2) , levels= c("premeno","ge40","lt40")) 
+data$menopause= factor (data$menopause, labels= c(0,1,2) , levels= c("premeno","ge40","lt40")) 
 
-data$tumor.size= factor (data$tumor.size, labels= c(0,1,2,3,4,5,6,7,8,9,10) , levels= c("0-4", "10-14", "15-19", "20-24","25-29", "30-34", "35-39","40-44","45-49","5-9","50-54")) 
+data$tumor.size= factor (data$tumor.size, labels= c(0,1,2,3,4,5,6,7,8,9,10) , levels= c("0-4","5-9","10-14", "15-19", "20-24","25-29", "30-34", "35-39","40-44","45-49","50-54")) 
 
-data$inv.nodes= factor (data$inv.nodes, labels= c(0,1,2,3,4,5,6) , levels= c("0-2", "12-14", "15-17", "24-26", "3-5", "6-8", "9-11"))
-
+data$inv.nodes= factor (data$inv.nodes, labels= c(0,1,2,3,4,5,6) , levels= c("0-2","3-5","6-8", "9-11","12-14", "15-17", "24-26"))
 
 data$node.caps= factor (data$node.caps, labels= c(0,1) , levels= c("2", "3"))
 
@@ -52,8 +54,6 @@ data
 #phantichdulieu
 describe(data)
 
-#table
-table(data$Class,data$age)
 
 #do thi
 plot(a$tyle,type="o",main="do tuoi so voi ty le mac",xlab="dotuoi",ylab="tyle")
@@ -63,5 +63,8 @@ plot(data$age, data$deg.malig)
 
 #Testing
 pairs.panels(data)
+t.test(as.numeric(data$age)~data$irradiat)
+ANOVA = aov(as.numeric(data$menopause)~data$node.caps, data=data)
+ANOVA
+TukeyHSD(ANOVA)
 
-#model
