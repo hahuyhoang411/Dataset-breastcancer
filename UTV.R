@@ -29,6 +29,9 @@ p8=ggplot(data, aes(tumor.size)) + geom_bar(aes(fill=tumor.size))+labs(title = "
 p9=ggplot(data, aes(inv.nodes)) + geom_bar(aes(fill=inv.nodes))+labs(title = "inv nodes")
 grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9)
 
+#density plot - ki
+ggplot(data,aes(x=data$`deg.malig`,fill=`tumor.size`))+geom_density(alpha=0.4)+ggtitle("Deg Malignant vs Tumor size")+xlab("Deg Malignant")+ylab("Density")
+
 sum(is.na(data))
 #Fix NA cua nodecaps
 data$node.caps=ifelse(is.na(data$node.caps),ave(data$node.caps,FUN=function(x)"no"),data$node.caps)
@@ -70,3 +73,10 @@ ANOVA = aov(as.numeric(data$menopause)~data$node.caps, data=data)
 ANOVA
 TukeyHSD(ANOVA)
 
+#model
+log_data = data[c(1,7,10)]
+View(log_data)
+data$deg.malig=factor(data$deg.malig,levels=c(1,2,3))
+set.seed(1000)
+shuf_ind = sample(1:nrow(log_data))
+log_data = log_data[shuf_ind,]
