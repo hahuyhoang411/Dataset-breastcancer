@@ -1,12 +1,22 @@
-data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
-head(data)
+---
+title: "Breastcancer Dataset BIOINFO"
+author: "Ha Huy Hoang and Nguyen Anh Thu"
+date: "4/23/2020"
+output:
+html_document:
+  code_download: yes
+  df_print: kable
+  highlight: tango
+---
 
-str(data)
-summary(data)
-#table
-table(data$Class,data$age)
+# Introduction
 
-#library
+This is one of three domains provided by the Oncology Institute that has repeatedly appeared in the machine learning literature.
+
+This data set includes 201 instances of one class and 85 instances of another class. The instances are described by 9 attributes, some of which are linear and some are nominal.
+
+# Library
+```{r message=FALSE, warning=FALSE}
 library(dplyr)
 library(car)
 library(MASS)
@@ -14,13 +24,44 @@ library(ggplot2)
 library(Hmisc)
 library(gridExtra)
 library(psych)
+```
 
+# Data
+```{r}
+data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
+head(data)
+```
+
+```{r}
+str(data)
+```
+
+```{r}
+data=na.omit(data)
+summary(data)
+```
+```{r}
+describe(data)
+```
+
+## Class vs age
+```{r}
+table(data$Class,data$age)
+```
+```{r}
+pairs.panels(data)
+```
+
+# Plot
+```{r}
 data = filter(data, breast.quad != '?' & node.caps != '?')
+```
 
-#Relationship between colums
-ggplot(data, aes(age)) + geom_bar(aes(fill=age))+labs(title = "Age")
+## Bar plots for one variable
+```{r fig.height=12, fig.width=18}
+p1 = ggplot(data, aes(age)) + geom_bar(aes(fill=age))+labs(title = "Age")
 p2 = ggplot(data, aes(Class)) +geom_bar(aes(fill=Class))+labs(title = "Class")
-p3= ggplot(data, aes(irradiat)) + geom_bar(aes(fill=irradiat))+labs(title = "irradiat")
+p3 = ggplot(data, aes(irradiat)) + geom_bar(aes(fill=irradiat))+labs(title = "irradiat")
 p4 = ggplot(data, aes(breast.quad)) + geom_bar(aes(fill=breast.quad))+labs(title = "breast.quad")
 p5 = ggplot(data, aes(breast)) + geom_bar(aes(fill=breast))+labs(title = "breast")
 p6 = ggplot(data, aes(node.caps)) + geom_bar(aes(fill=node.caps))+ labs(title = "node.caps")
@@ -28,27 +69,39 @@ p7 = ggplot(data, aes(menopause)) + geom_bar(aes(fill=menopause))+labs(title = "
 p8 = ggplot(data, aes(tumor.size)) + geom_bar(aes(fill=tumor.size))+labs(title = "Tumor Size")
 p9 = ggplot(data, aes(inv.nodes)) + geom_bar(aes(fill=inv.nodes))+labs(title = "inv nodes")
 grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9)
+```
 
-#Sidebyside barchart
+## Plot of multiple variables
+```{r}
 ggplot(data=data,aes(x=age,fill=irradiat,))+geom_bar()
-
-#Connect
 ggplot(data,aes(tumor.size))+geom_bar()+facet_wrap(~irradiat)+theme(axis.text.x = element_text(angle = 90))+ggtitle("Irradiation Based on Tumor Size")+xlab("Tumor Size")+ylab("Count")
 ggplot(data,aes(x=Class,fill=irradiat))+geom_bar(position ="dodge")
 ggplot(data,aes(x=tumor.size,fill=menopause))+geom_bar(position="dodge")
 ggplot(data,aes(x=age,fill=tumor.size))+geom_bar(position ="dodge")
-ggplot(data,aes(x="",fill=menopause)) + geom_bar(width=3)+coord_polar("y")
-#density plot - ki
-ggplot(data,aes(x=`deg.malig`,fill=`tumor.size`))+geom_density(alpha=0.4)+ggtitle("Deg Malignant vs Tumor size")+xlab("Deg Malignant")+ylab("Density")
+```
 
+## Piechart
+```{r}
+ggplot(data,aes(x="",fill=menopause)) + geom_bar(width=3)+coord_polar("y")
+```
+
+# Density plot
+```{r}
+ggplot(data,aes(x=`deg.malig`,fill=`tumor.size`))+geom_density(alpha=0.4)+ggtitle("Deg Malignant vs Tumor size")+xlab("Deg Malignant")+ylab("Density")
+```
+
+
+## Labeling features
+```{r}
 sum(is.na(data))
-#Fix NA cua nodecaps
+
+#Fix NA in nodecaps
 data$node.caps=ifelse(is.na(data$node.caps),ave(data$node.caps,FUN=function(x)"no"),data$node.caps)
-#Fix NA cua breasquad
+#Fix NA in breasquad
 data$breast.quad=ifelse(is.na(data$breast.quad),ave(data$breast.quad,FUN=function(x)"left_low"),data$breast.quad)
-#Kiem tra levels cua cac cot
+#Check levels
 factor (data$irradiat)
-#label 
+#labeling 
 data$Class= factor (data$Class, labels= c(0,1) , levels= c("no-recurrence-events", "recurrence-events"))
 
 data$age= factor (data$age,labels= c(0,1,2,3,4,5) , levels= c("20-29","30-39","40-49","50-59","60-69","70-79")) 
@@ -69,35 +122,63 @@ data$breast= factor (data$breast, labels= c(0,1) , levels= c("left", "right"))
 data$breast.quad= factor (data$breast.quad, labels= c(0,1,2,3,4) , levels= c("2", "3", "4", "5", "6")) 
 
 data$irradiat= factor (data$irradiat, labels= c(0,1) , levels= c("no", "yes")) 
-data
-
-#phantichdulieu
-describe(data)
+```
 
 
-#Testing
-pairs.panels(data)
+# Testing
+## Ttest
+```{r}
+#Testing tumorsize vs irradiat
 t.test(as.numeric(data$tumor.size)~data$irradiat)
+```
+
+```{r}
+#Test tumorsize vs nodecaps
 t.test(as.numeric(data$tumor.size)~data$node.caps)
+```
+
+## Anova
+```{r}
 ANOVA = aov(as.numeric(data$tumor.size)~data$node.caps, data=data)
 summary(ANOVA)
 TukeyHSD(ANOVA)
+```
 
-#model
-
+# Model
+```{r}
 model <- lm(as.numeric(data$tumor.size) ~ ., data=data)
 step.model <- stepAIC(model, direction = "both", 
                       trace = FALSE)
 summary(step.model)
-predict(step.model)
+```
+# Interpret the model
+## Variables names
++ node.caps1,breast.quad1,breast.quad2,breast.quad4 are $X_{1}$,$X_{2}$,$X_{3}$,$X_{4}$, respectively.
++ tumor.size is Y.
+The model above is achieved by using the lm() function in R and the output is called using the summary() function on the model.
+Formula Call:
+  $Y=4,14+0,69X_{1} +1,36X_{2} +1,56X_{3} +2,20X_{4}$
+  
+Residuals : break down into 5 sumary point:  Min, Max, Median, 1Q,3Q. In the model, we can see that the distribution of the residuals do not appear to be strongly symetrical. 
+
+Cofficients : reprensent the intercept, slope terms, P-value
+Another results : R-square = 0.1368, Adjusted R squared = 0.1144, F statistic = 6.092
+
+## Predict
+The following section, we will calculate Y hat:
+```{r}
+head(predict(step.model),10)
+```
+Finally, we will have Residual testing:
+```{r fig.height=6, fig.width=8}
 op = par(mfrow = c(2,2))
 p12 = plot(step.model, c(1,2))
 p13 = spreadLevelPlot(step.model)
+```
 
+As you can see on three images above:
+  
++ The mean of residuals is approximately zero
++ Variance is always constant
++ Follow a normal distribution
 
-install.packages('arm')
-library("arm")
-m1 = bayesglm(irradiat ~ ., family = 'binomial', data = data)
-m2 = stepAIC(m1, direction = 'forward', trace = F)
-summary(m2)
-predict(m2)
