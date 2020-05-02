@@ -1,8 +1,7 @@
 ---
-title: "Logistic Regression Model for Class of Breast Cancer"
+title: "Logistic Regression Model for Breast Cancer's class"
 author: "Hoang H. Ha and Thu A. Nguyen"
-Contact: Hoang: +84918362924
-         Thu :  +84942000639
+Contact: "Hoang: +84918362924 or Thu :  +84942000639"
 date: "4/28/2020"
 output:
 html_document:
@@ -18,19 +17,26 @@ This dataset is one of three domains provided by the Oncology Institute that has
 
 It includes 201 instances of one class and 85 instances of another class. The instances are described by 9 attributes, some of which are linear and some are nominal.
 
+
 # Data loading
-```{r message=FALSE, warning=FALSE}
+```{r warning=FALSE}
 # Install the required library
+list.of.packages <- c("dplyr", "qwraps2", "ggplot2", "gridExtra", "car","arm")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(qwraps2)
+options(qwraps2_markup = "markdown")
 library(dplyr)
 library(ggplot2)
-library(Hmisc)
 library(gridExtra)
-library(caTools)
-
+library(arm)
+library(car)
+library(psych)
 
 # Load the dataset
 data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
 ```
+
 
 #Exploratory data analysis
 The data have 286 rows of patients, and 10 fields: Class, age, menopause, tumor.size, inv.nodes, node.caps, deg.malig, breast, breast.quad, irradiat
@@ -39,7 +45,7 @@ head(data)
 ```
 
 ```{r}
-#Structure
+#Show structure of the dataset
 str(data)
 ```
 
@@ -59,16 +65,21 @@ This data have no NA values.
 #Illustrate the relationship between Class and age
 table(data$Class,data$age)
 ```
+The percentage of cancer-patients occur rarely in youngest and oldest group. Besides, The high percentage of "no-reccurence-events" and "recurrence-events" are at age "40-69". Specifically, age "40-49" accounts for the highest propotion in "recurrence-events" while age"50-59" accounts for the highest percentage in opposite class.
 
 ```{r}
 #correlation coefficient between variables
 pairs.panels(data)
 ```
+This graph shows coefficients between all variables. More specifically, the highest correlation coefficient (0,72) is between age and menopause (statistically significant)  while the correlation coefficient between menopause and tumor.size is 0 ( no statistically significant). In addition, the above graph also illustrates scatter charts, histograms for each pair of variables.
 
-There is not NA showing, there are some ? which appears in the summary view. Therefore, we will remove ? values in breast.quad and node.caps columns.
+Next, there is not NA showing in dataset, there are some ? which appears in the summary view. Therefore, we will remove ? values in breast.quad and node.caps columns.
 ```{r}
 data = filter(data, breast.quad != '?' & node.caps != '?')
 ```
+
+
+
 
 Bar plots for one variable
 ```{r fig.height=12, fig.width=18}
@@ -84,22 +95,26 @@ p9 = ggplot(data, aes(inv.nodes)) + geom_bar(aes(fill=inv.nodes))+labs(title = "
 grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9)
 ```
 
-Plot of multiple variables
+
 ```{r}
-ggplot(data=data,aes(x=age,fill=irradiat,))+geom_bar()
-ggplot(data,aes(tumor.size))+geom_bar()+facet_wrap(~irradiat)+theme(axis.text.x = element_text(angle = 90))+ggtitle("Irradiation Based on Tumor Size")+xlab("Tumor Size")+ylab("Count")
-ggplot(data,aes(x=Class,fill=irradiat))+geom_bar(position ="dodge")
-ggplot(data,aes(x=tumor.size,fill=menopause))+geom_bar(position="dodge")
-ggplot(data,aes(x=age,fill=tumor.size))+geom_bar(position ="dodge")
+#Plot of multiple variables
+p10 = ggplot(data=data,aes(x=age,fill=irradiat,))+geom_bar()
+p11 = ggplot(data,aes(tumor.size))+geom_bar()+facet_wrap(~irradiat)+theme(axis.text.x = element_text(angle = 90))+ggtitle("Irradiation Based on Tumor Size")+xlab("Tumor Size")+ylab("Count")
+p12 = ggplot(data,aes(x=Class,fill=irradiat))+geom_bar(position ="dodge")
+p13 = ggplot(data,aes(x=tumor.size,fill=menopause))+geom_bar(position="dodge")
+p14 = ggplot(data,aes(x=age,fill=tumor.size))+geom_bar(position ="dodge")
+grid.arrange(p10,p11,p12,p13,p14)
 ```
+
 
 ```{r}
 ##Pie chart for Menopause using coord_polar
 ggplot(data,aes(x="",fill=menopause)) + geom_bar(width=3)+coord_polar("y")
 ```
 
-Density plot
+
 ```{r}
+#Density plot
 ggplot(data,aes(x=`deg.malig`,fill=`tumor.size`))+geom_density(alpha=0.4)+ggtitle("Deg Malignant vs Tumor size")+xlab("Deg Malignant")+ylab("Density")
 ```
 
@@ -144,7 +159,7 @@ summary(ANOVA)
 TukeyHSD(ANOVA)
 ```
 
-# Logistic regression Model
+# Logistic regression Model for Breast Cancer's Class
 ```{r}
 full.model = bayesglm(Class ~ ., data=data,family="binomial")
 step.model <- stepAIC(full.model, direction = "forward", trace = FALSE)
