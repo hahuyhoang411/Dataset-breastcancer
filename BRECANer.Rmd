@@ -1,0 +1,307 @@
+---
+title: "Comparison between logistic regression and neural network models on Breast Cancer's class "
+author: "Hoang H. Ha and Thu A. Nguyen"
+Contact: "Hoang: +84918362924 or Thu :  +84942000639"
+date: "4/28/2020"
+output:
+html_document:
+  code_download: yes
+  df_print: kable
+  highlight: tango
+---
+
+# Introduction
+Breast cancer is cancer that develops from breast tissue. Signs of breast cancer may include a lump in the breast, a change in breast shape, dimpling of the skin, fluid coming from the nipple, a newly-inverted nipple, or a red or scaly patch of skin. In this report, we will research factors which can affect the recurrence of breast cancer such as: age, menopause, tumor.size, inv.nodes, node.caps, deg.malig, breast, breast.quad.
+
+This dataset is one of three domains provided by the Oncology Institute that has repeatedly appeared in the machine learning literature.
+
+It includes 201 instances of one class and 85 instances of another class. The instances are described by 9 attributes, some of which are linear and some are nominal.
+
+Attribute Information:
+
+1. Class: no-recurrence-events, recurrence-events
+2. age: 10-19, 20-29, 30-39, 40-49, 50-59, 60-69, 70-79, 80-89, 90-99.
+3. menopause: lt40, ge40, premeno.
+4. tumor-size: 0-4, 5-9, 10-14, 15-19, 20-24, 25-29, 30-34, 35-39, 40-44, 45-49, 50-54, 55-59.
+5. inv-nodes: 0-2, 3-5, 6-8, 9-11, 12-14, 15-17, 18-20, 21-23, 24-26, 27-29, 30-32, 33-35, 36-39.
+6. node-caps: yes, no.
+7. deg-malig: 1, 2, 3.
+8. breast: left, right.
+9. breast-quad: left-up, left-low, right-up, right-low, central.
+10. irradiat: yes, no.
+
+# Data loading
+```{r warning=FALSE}
+# Install the required library
+list.of.packages <- c("dplyr", "qwraps2", "ggplot2", "gridExtra", "car","arm","psych","caTools","caret")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(qwraps2)
+options(qwraps2_markup = "markdown")
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+library(arm)
+library(car)
+library(psych)
+library(caTools)
+library(caret)
+
+# Load the dataset
+data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
+attach(data)
+```
+
+
+#Exploratory data analysis
+The data have 286 rows of patients, and 10 fields: Class, age, menopause, tumor.size, inv.nodes, node.caps, deg.malig, breast, breast.quad, irradiat
+```{r}
+head(data)
+```
+
+```{r}
+#Show structure of the dataset
+str(data)
+```
+
+The basic statisics of data was below: 
+```{r}
+summary(data)
+```
+- We run the summary function to show each column, it's data type and few other attributes which are useful for attributes (displays min, 1st quartile, median, mean, 3rd quartile, max values or the number of patient in each level).
+- Node-caps is missing 8 values and breast-quad is missing 1 value. They are denoted as ""?" in the data set.
+
+```{r}
+#Illustrate the relationship between Class and age
+table(data$Class,data$age)
+```
+The percentage of cancer-patients occur rarely in youngest and oldest group. Besides, The high percentage of "no-reccurence-events" and "recurrence-events" are at age "40-69". Specifically, age "40-49" accounts for the highest propotion in "recurrence-events" while age"50-59" accounts for the highest percentage in opposite class.
+
+```{r}
+#correlation coefficient between variables
+pairs.panels(data)
+```
+This graph shows coefficients between all variables. More specifically, the highest correlation coefficient (0,72) is between age and menopause (statistically significant)  while the correlation coefficient between menopause and tumor.size is 0 ( no statistically significant). In addition, the above graph also illustrates scatter charts, histograms for each pair of variables.
+
+Besides,the data might contain NA values and they would be checked before building the model.
+```{r}
+sum(is.na(data))
+```
+There is not NA showing in dataset but there are some "?" which appears in the summary view. Therefore, we will remove "?" values in breast.quad and node.caps columns.
+
+```{r}
+data = filter(data, breast.quad != '?' & node.caps != '?')
+```
+
+Before explorating the other aspects of dataset and buliding the model, we produce bar graphs in ggplot for each attribute with the class variable highlighted in color to see if there are any interesting interactions between the covariates and the class variable. A graph was produced for each of the 9 attributes. 
+```{r}
+p1 = ggplot(data, aes(x=inv.nodes, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Inv Nodes Grouped by Class',x='Inv Nodes',y='Count')
+p2 = ggplot(data, aes(x=menopause, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Menopause Grouped by Class',x='Menopause',y='Count')
+p3 = ggplot(data, aes(x=irradiat, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Irradiat Grouped by Class',x='Irradiat',y='Count')
+p4 = ggplot(data, aes(x=age, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Age Grouped by Class',x='Age',y='Count')
+p5 = ggplot(data, aes(x=breast.quad, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Breast Quandrant Grouped by Class',x='Breast Quandrant',y='Count')
+p6 = ggplot(data, aes(x=tumor.size, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Tumor size Grouped by Class',x=' Tumor size',y='Count')
+p7 = ggplot(data, aes(x= node.caps, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of node.caps Grouped by Class',x='Node.caps',y='Count')
+p8 = ggplot(data, aes(x=breast, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Breast Grouped by Class',x='Breast',y='Count')
+p9 = ggplot(data, aes(x=deg.malig, fill=Class)) + geom_bar(position='dodge') + labs(title='Histogram of Deg.malig Grouped by Class',x='Degree of Malignancy',y='Count')
+grid.arrange(p1,p2,p3,p4,p5,p6,p7,p8,p9)
+```
+From these graphs, we have some comments:
++ Age group and breast quandrant seems to follow normal distributions. 
++ Moreover, when we see the histogram of Inv.nodes, class variables occurs the most with fewer axillary lymph nodes (0-2).
++ At Degree of Malignancy histogram: the higher degree of malignancy is, the more reccurence-events increase but there is a fluctuation of no-reccence-events, it is most frequent at 2, then 1, and then 3.
+
+```{r}
+#Box plot
+ggplot(data,aes(x=menopause,y="deg.malig"), fill=menopause)+geom_boxplot()
+```
+
+```{r}
+#Density plot
+ggplot(data,aes(x=`deg.malig`,fill=`tumor.size`))+geom_density(alpha=0.4)+ggtitle("Deg Malignant vs Tumor size")+xlab("Deg Malignant")+ylab("Density")
+```
+
+```{r}
+#Labeling features
+data$Class= factor (data$Class, labels= c(0,1) , levels= c("no-recurrence-events", "recurrence-events"))
+data$age= factor (data$age,labels= c(0,1,2,3,4,5) , levels= c("20-29","30-39","40-49","50-59","60-69","70-79")) 
+data$menopause= factor (data$menopause, labels= c(0,1,2) , levels= c("premeno","ge40","lt40")) 
+data$tumor.size= factor (data$tumor.size, labels= c(0,1,2,3,4,5,6,7,8,9,10) , levels= c("0-4","5-9","10-14", "15-19", "20-24","25-29", "30-34", "35-39","40-44","45-49","50-54")) 
+data$inv.nodes= factor (data$inv.nodes, labels= c(0,1,2,3,4,5,6) , levels= c("0-2","3-5","6-8", "9-11","12-14", "15-17", "24-26"))
+data$node.caps= factor (data$node.caps, labels= c(0,1) , levels= c("2", "3"))
+data$deg.malig= factor (data$deg.malig, labels= c(0,1,2) , levels= c("1", "2", "3"))
+data$breast= factor (data$breast, labels= c(0,1) , levels= c("left", "right")) 
+data$breast.quad= factor (data$breast.quad, labels= c(0,1,2,3,4) , levels= c("2", "3", "4", "5", "6")) 
+data$irradiat= factor (data$irradiat, labels= c(0,1) , levels= c("no", "yes")) 
+```
+
+
+```{r}
+#Fix NA in nodecaps
+data$node.caps=ifelse(is.na(data$node.caps),ave(data$node.caps,FUN=function(x)"no"),data$node.caps)
+#Fix NA in breasquad
+data$breast.quad=ifelse(is.na(data$breast.quad),ave(data$breast.quad,FUN=function(x)"left_low"),data$breast.quad)
+#Check levels
+factor (data$irradiat)
+```
+
+
+# Hypothesis testing
+## Ttest
+```{r}
+#Testing tumorsize vs irradiat
+t.test(as.numeric(data$tumor.size)~data$irradiat)
+```
+
+#BUILDING THE MODEL
+## Logistic regression Model for Breast Cancer's Class
+We want to predict an outcome variable that ss categorical so we use logistic regression.
+
+```{r}
+#suffling
+set.seed(1000)
+shuf_ind <- sample(1:nrow(data))
+data <- data[shuf_ind, ]
+
+#training set
+training_set <-subset(data,split==T)
+
+#test set
+
+set.seed(1234)
+split <-sample.split(data$Class,SplitRatio =0.8 )
+
+#training set
+training_set <-subset(data,split==T)
+
+#test set
+test_set <-subset(data,split==F)
+
+View(training_set)
+View(test_set)
+
+#generalised linear model
+classifier <-glm(formula=Class~. ,family = binomial(),data=training_set)
+summary(classifier)
+```
+From the output above, the coefficients table shows the beta coefficient estimates and their significance levels. Columns are:
+
+Estimate: the intercept (b0) and the beta coefficient estimates associated to each predictor variable
+Std.Error: the standard error of the coefficient estimates. This represents the accuracy of the coefficients. The larger the standard error, the less confident we are about the estimate.
+z value: the z-statistic, which is the coefficient estimate (column 2) divided by the standard error of the estimate (column 3)
+Pr(>|z|): The p-value corresponding to the z-statistic. The smaller the p-value, the more significant the estimate is.
+
+Next,We'll make predictions using the test data in order to evaluate the performance of our logistic regression model.
+
+The procedure is as follow:
+
+Predict the class membership probabilities of observations based on predictor variables
+Assign the observations to the class with highest probability score (i.e above 0.5)
+The R function predict() can be used to predict the probability of recurrence-events, given the predictor values. Use the option type = "response" to directly obtain the probabilities
+
+```{r}
+#probability predict
+prob_pred <-predict(classifier,type="response",newdata=test_set[-3])
+prob_pred
+
+y_pred <- ifelse(prob_pred>0.4,1,0)
+y_pred
+```
+
+##NEURAL NETWORK MODEL
+```{r}
+library(keras)
+set.seed(100)
+shuf_ind <-sample(1:nrow(data))
+data <- data[shuf_ind,]
+
+set.seed(100)
+split <- sample.split(data$Class, SplitRatio = 0.8)
+y_train <- subset(data, split == TRUE)
+y_train <- y_train[1]
+y_train = as.matrix(y_train)
+y_train <- as.numeric(y_train)
+
+y_test <- subset(data, split == FALSE)
+y_test <- y_test[1]
+y_test = as.matrix(y_test)
+y_test <- as.numeric(y_test)
+
+data_col_1  <- colnames(data)
+data_col_1 <- data_col_1[data_col_1 != "Class"]
+data <- data[data_col_1]
+
+x_train <- subset(data, split == TRUE)
+x_train <- x_train[1:9]
+
+x_train$age <- as.numeric(x_train$age)
+x_train$menopause <- as.numeric(x_train$menopause)
+x_train$tumor.size <- as.numeric(x_train$tumor.size)
+x_train$inv.nodes <- as.numeric(x_train$inv.nodes)
+x_train$node.caps <- as.numeric(x_train$node.caps)
+x_train$deg.malig <- as.numeric(x_train$deg.malig)
+x_train$breast <- as.numeric(x_train$breast)
+x_train$breast.quad <- as.numeric(x_train$breast.quad)
+x_train$irradiat <- as.numeric(x_train$irradiat)
+
+x_train <- as.matrix(x_train)
+x_train <- scale(x_train)
+
+x_test <- subset(data, split == FALSE)
+x_test <- x_test[1:9]
+x_test$age <- as.numeric(x_test$age)
+x_test$menopause <- as.numeric(x_test$menopause)
+x_test$tumor.size <- as.numeric(x_test$tumor.size)
+x_test$inv.nodes <- as.numeric(x_test$inv.nodes)
+x_test$node.caps <- as.numeric(x_test$node.caps)
+x_test$deg.malig <- as.numeric(x_test$deg.malig)
+x_test$breast <- as.numeric(x_test$breast)
+x_test$breast.quad <- as.numeric(x_test$breast.quad)
+x_test$irradiat <- as.numeric(x_test$irradiat)
+
+x_test <- as.matrix(x_test)
+col_means_train <- attr(x_train, "scaled:center") 
+col_stddevs_train <- attr(x_train, "scaled:scale")
+x_test <- scale(x_test, center = col_means_train, scale = col_stddevs_train)
+
+# Build neural network with AHD
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 16, activation = 'relu',input_shape = dim(x_train)[2]) %>%
+  layer_dense(units = 8, activation = "relu") %>%
+  layer_dense(units = 1, activation = "sigmoid")
+
+
+model %>% compile(
+  optimizer = optimizer_adam(),
+  loss = 'mse',
+  metrics = c('accuracy')
+)
+
+model %>% fit(x_train, y_train, epoch = 50, batch_size = 32)
+
+score <- model %>% evaluate(x_test, y_test)
+
+p1 <- model %>% predict(x_test)
+
+pred = as.factor(ifelse(p1 > 0.5 , '1','0'))
+
+
+confusionMatrix(pred,factor(y_test))
+```
+
+# BRIEF INTERPRET THE MODEL
+## Logistic regression model
+- The output above shows the estimate of the regression beta coefficients and their significance levels.  
++ The intercept (b0) is -1.8569.
++ Each one-unit change in deg.malig2 will increase the log odds of getting admit by 1.8418, and its p-value indicates that it is somewhat significant in determining the admit.
++ Each unit increase in irradiat1 increases the log odds of getting admit by 0.7734 and p-value indicates that it is somewhat significant in determining the admit.
+
+- The output also shows Null deviance, Residual deviance, AIC:
++ Null Deviance and Residual Deviance - Null Deviance indicates the response predicted by a model with only an intercept. Lower the value, better the model. 
++ Residual deviance indicates the response predicted by a model on adding independent variables. Lower the value, better the model. The difference between Null deviance and Residual deviance tells us that the model is a good fit. Greater the difference, better the model.. It makes sense to consider the model good if that difference is big enough.
+-AIC provides a method for assessing the quality of your model through comparison of related models.  It's based on the Deviance, but penalizes you for making the model more complicated.  Much like adjusted R-squared, it's intent is to prevent you from including irrelevant predictors
+
+- The logistic equation can be written as p = exp(-1.8569 + 1.8418*degmalig2 +0.7734*irradiat1)/ [1+ exp(-1.8569 + 1.8418*degmalig2 +0.7734*irradiat1)]
+
+##Neural network model
