@@ -29,7 +29,6 @@ data$node.caps= factor (data$node.caps, labels= c(0,1) , levels= c("2", "3"))
 
 data$deg.malig= factor (data$deg.malig, labels= c(0,1,2) , levels= c("1", "2", "3"))
 
-
 data$breast= factor (data$breast, labels= c(0,1) , levels= c("left", "right")) 
 
 data$breast.quad= factor (data$breast.quad, labels= c(0,1,2,3,4) , levels= c("2", "3", "4", "5", "6")) 
@@ -37,31 +36,20 @@ data$breast.quad= factor (data$breast.quad, labels= c(0,1,2,3,4) , levels= c("2"
 data$irradiat= factor (data$irradiat, labels= c(0,1) , levels= c("no", "yes")) 
 
 set.seed(100)
-shuf_ind <-sample(1:nrow(data))
-data <- data[shuf_ind,]
-
-set.seed(100)
 split <- sample.split(data$Class, SplitRatio = 0.8)
 y_train <- subset(data, split == TRUE)
 y_train <- y_train[1]
-y_train <- as.matrix(y_train)
-y_train <- as.vector(y_train)
+y_train = as.matrix(y_train)
 y_train <- as.numeric(y_train)
-
 
 y_test <- subset(data, split == FALSE)
 y_test <- y_test[1]
-y_test <- as.matrix(y_test)
-y_test <- as.vector(y_test)
+y_test = as.matrix(y_test)
 y_test <- as.numeric(y_test)
-
-
 
 data_col_1  <- colnames(data)
 data_col_1 <- data_col_1[data_col_1 != "Class"]
 data <- data[data_col_1]
-
-
 
 x_train <- subset(data, split == TRUE)
 x_train <- x_train[1:9]
@@ -78,7 +66,6 @@ x_train$irradiat <- as.numeric(x_train$irradiat)
 
 x_train <- as.matrix(x_train)
 x_train <- scale(x_train)
-
 
 x_test <- subset(data, split == FALSE)
 x_test <- x_test[1:9]
@@ -102,7 +89,7 @@ model <- keras_model_sequential()
 model %>%
   layer_dense(units = 16, activation = 'relu',input_shape = dim(x_train)[2]) %>%
   layer_dense(units = 8, activation = "relu") %>%
-  layer_dense(units = 1)
+  layer_dense(units = 1, activation = "sigmoid")
 
 
 model %>% compile(
@@ -111,7 +98,7 @@ model %>% compile(
   metrics = c('accuracy')
 )
 
-model %>% fit(x_train, y_train, epoch = 50, batch_size = 64, validation_split = 0.2)
+model %>% fit(x_train, y_train, epoch = 50, batch_size = 32)
 
 score <- model %>% evaluate(x_test, y_test)
 

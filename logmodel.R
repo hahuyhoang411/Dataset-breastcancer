@@ -1,5 +1,7 @@
-data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_data/breast-data.csv")
+data = read.csv("https://raw.githubusercontent.com/pnhuy/bioinfo/master/datasets/breast_cancer/breast-cancer.csv")
+
 attach(data)
+
 
 library(dplyr)
 library(caret)
@@ -13,16 +15,9 @@ data$irradiat= factor (data$irradiat, labels= c(0,1) , levels= c("no", "yes"))
 
 log_data <- data[c(1,7,10)]
 
-#shuffling
-set.seed(1000)
-shuf_ind <-sample(1:nrow(log_data))
-log_data <-log_data[shuf_ind,]
-
 #splitting data
-library(caTools)
-## Warning: package 'caTools' was built under R version 3.6.1
-set.seed(1234)
-split <-sample.split(log_data$irradiat,SplitRatio =0.8 )
+set.seed(123)
+split <-sample.split(log_data$Class,SplitRatio =0.8 )
 
 #training set
 training_set <-subset(log_data,split==T)
@@ -30,9 +25,10 @@ training_set <-subset(log_data,split==T)
 #test set
 test_set <-subset(log_data,split==F)
 
-View(training_set)
-View(test_set)
 
 #generalised linear model
-classifier <-glm(formula=irradiat~. ,family = binomial(),data=training_set)
+classifier <- glm(formula = Class~. ,family = binomial(),data=training_set)
 summary(classifier)
+pre = predict(classifier,type="response",newdata=test_set[-1])
+y_pre <- ifelse(pre>0.5,"recurrence","no_recurrence")
+y_pre
