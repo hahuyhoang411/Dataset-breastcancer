@@ -35,6 +35,9 @@ data$breast.quad= factor (data$breast.quad, labels= c(0,1,2,3,4) , levels= c("2"
 
 data$irradiat= factor (data$irradiat, labels= c(0,1) , levels= c("no", "yes")) 
 
+#hypothesistestClass~tumorsize
+t.test(as.numeric(data$tumor.size)~data$Class)
+
 set.seed(100)
 split <- sample.split(data$Class, SplitRatio = 0.8)
 y_train <- subset(data, split == TRUE)
@@ -87,8 +90,8 @@ x_test <- scale(x_test, center = col_means_train, scale = col_stddevs_train)
 # Build neural network with AHD
 model <- keras_model_sequential()
 model %>%
-  layer_dense(units = 16, activation = 'relu',input_shape = dim(x_train)[2]) %>%
-  layer_dense(units = 8, activation = "relu") %>%
+  layer_dense(units = 32, activation = 'relu', input_shape = dim(x_train)[2]) %>%
+  layer_dense(units = 16, activation = "relu") %>%
   layer_dense(units = 1, activation = "sigmoid")
 
 
@@ -98,7 +101,7 @@ model %>% compile(
   metrics = c('accuracy')
 )
 
-model %>% fit(x_train, y_train, epoch = 50, batch_size = 32)
+model %>% fit(x_train, y_train, epoch = 200, batch_size = 64)
 
 score <- model %>% evaluate(x_test, y_test)
 
