@@ -30,5 +30,6 @@ test_set <-subset(log_data,split==F)
 classifier <- glm(formula = Class~. ,family = binomial(),data=training_set)
 summary(classifier)
 pre = predict(classifier,type="response",newdata=test_set[-1])
-y_pre <- ifelse(pre>0.5,"recurrence","no_recurrence")
+y_pre <- ifelse(pre>0.5,"1","0")
 y_pre
+confusionMatrix(factor(y_pre), factor(test_set$Class))

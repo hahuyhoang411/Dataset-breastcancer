@@ -87,6 +87,7 @@ col_means_train <- attr(x_train, "scaled:center")
 col_stddevs_train <- attr(x_train, "scaled:scale")
 x_test <- scale(x_test, center = col_means_train, scale = col_stddevs_train)
 
+x_test
 # Build neural network with AHD
 model <- keras_model_sequential()
 model %>%
@@ -108,7 +109,6 @@ score <- model %>% evaluate(x_test, y_test)
 p1 <- model %>% predict(x_test)
 
 pred = as.factor(ifelse(p1 > 0.5 , '1','0'))
-
 
 confusionMatrix(pred,factor(y_test))
 
